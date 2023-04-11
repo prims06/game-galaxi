@@ -61,6 +61,10 @@ class MainWidget(Widget):
         offset = index-0.5
         line_x = central_line_x + offset * spacing + self.current_offset_x
         return line_x
+    def get_line_y_from_index(self, index):
+        spacing_y = self.H_LINES_SPACING * self.height
+        line_y = index * spacing_y - self.current_offset_y
+        return line_y
     def update_vertical_lines(self):
         start_index = -int(self.V_NB_LINES/2)+1
         for i in range(start_index, start_index+self.V_NB_LINES):
@@ -81,15 +85,14 @@ class MainWidget(Widget):
         end_index = start_index+self.V_NB_LINES - 1
         xmin = self.get_line_x_from_index(start_index)
         xmax = self.get_line_x_from_index(end_index)
-        spacing_y = self.H_LINES_SPACING * self.height
         for i in range(0, self.H_NB_LINES):
-            line_y = i*spacing_y - self.current_offset_y
+            line_y = self.get_line_y_from_index(i)
             x1, y1 = self.transform(xmin, line_y)
             x2, y2 = self.transform(xmax, line_y)
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
 
             self.horizontal_lines[i].points = [x1, y1, x2, y2]
-            offset+=1
+
 
     def update(self, dt):
 
