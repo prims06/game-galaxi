@@ -1,3 +1,5 @@
+import random
+
 from kivy import platform
 from kivy.config import Config
 Config.set('graphics', 'width', '700')
@@ -32,10 +34,9 @@ class MainWidget(Widget):
 
     SPEED = 1
     current_offset_y = 0
-
-    tile = None
-    ti_x = 0
-    ti_y = 2
+    NB_TILES = 4
+    tiles = []
+    tiles_coordinates = []
     current_y_loop =0
 
     def is_desktop(self):
@@ -48,6 +49,7 @@ class MainWidget(Widget):
         self.init_vertical_lines()
         self.init_horizontal_lines()
         self.init_tiles()
+        self.generate_tiles_coordinates()
         if self.is_desktop():
             self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
             self._keyboard.bind(on_key_down=self.on_keyboard_down)
@@ -58,8 +60,38 @@ class MainWidget(Widget):
     def init_tiles(self):
         with self.canvas:
             Color(1,1,1)
-            # self.line = Line(points=[100,0,100,100])
-            self.tile = Quad()
+            for i in range(0, self.NB_TILES):
+                self.tiles.append(Quad())
+    def generate_tiles_coordinates(self):
+        last_y = 0
+        last_x = 0
+        for i in range(len(self.tiles_coordinates) - 1, -1, -1):
+            if self.tiles_coordinates[i][1] < self.current_y_loop:
+                del self.tiles_coordinates[i]
+        if len(self.tiles_coordinates) > 0:
+            last_coordinate = self.tiles_coordinates[-1]
+            last_x = last_coordinate[0]
+            last_y = last_coordinate[1]+1
+
+
+        for i in range(len(self.tiles_coordinates), self.NB_TILES):
+            r = random.randint(0, 2)
+            self.tiles_coordinates.append((last_x,last_y))
+
+            if r == 1:
+                last_x += 1
+                self.tiles_coordinates.append((last_x, last_y))
+                last_y+=1
+                self.tiles_coordinates.append((last_x,last_y))
+            elif r == 2:
+                last_x -= 1
+                self.tiles_coordinates.append((last_x, last_y))
+                last_y += 1
+                self.tiles_coordinates.append((last_x, last_y))
+            else:
+                last_y += 1
+                self.tiles_coordinates.append((last_x, last_y))
+            last_y += 1
     def init_vertical_lines(self):
         with self.canvas:
             Color(1,1,1)
@@ -92,13 +124,16 @@ class MainWidget(Widget):
             self.vertical_lines[i].points = [x1, y1, x2, y2]
 
     def update_tiles(self):
-        xmin, ymin = self.get_tile_coordinates(self.ti_x, self.ti_y)
-        xmax, ymax =  self.get_tile_coordinates(self.ti_x+1, self.ti_y+1)
-        x1,y1 = self.transform(xmin,ymin)
-        x2, y2 = self.transform(xmin, ymax)
-        x3, y3 = self.transform(xmax, ymax)
-        x4, y4 = self.transform(xmax, ymin)
-        self.tile.points = [x1,y1,x2,y2,x3,y3,x4,y4]
+        for i in range(0, self.NB_TILES):
+            tile = self.tiles[i]
+            tile_coordinates = self.tiles_coordinates[i]
+            xmin, ymin = self.get_tile_coordinates(tile_coordinates[0], tile_coordinates[1])
+            xmax, ymax =  self.get_tile_coordinates(tile_coordinates[0]+1, tile_coordinates[1]+1)
+            x1,y1 = self.transform(xmin,ymin)
+            x2, y2 = self.transform(xmin, ymax)
+            x3, y3 = self.transform(xmax, ymax)
+            x4, y4 = self.transform(xmax, ymin)
+            tile.points = [x1,y1,x2,y2,x3,y3,x4,y4]
     def init_horizontal_lines(self):
         with self.canvas:
             Color(1,1,1)
@@ -126,12 +161,14 @@ class MainWidget(Widget):
         self.update_vertical_lines()
         self.update_horizontal_lines()
         self.update_tiles()
+
         self.current_offset_y += self.SPEED * time_factor
 
         spacing_y = self.H_LINES_SPACING * self.height
         if self.current_offset_y >= spacing_y:
             self.current_offset_y -= spacing_y
             self.current_y_loop += 1
+            self.generate_tiles_coordinates()
 
         self.current_offset_x += self.current_speed_x * time_factor
 
